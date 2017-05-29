@@ -15,7 +15,12 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
-    lmetrics_sup:start_link().
+    case lmetrics_sup:start_link() of
+        {ok, Pid} ->
+            {ok, Pid};
+        Other ->
+            {error, Other}
+    end.
 
 %%--------------------------------------------------------------------
 stop(_State) ->

@@ -1,16 +1,19 @@
 {application, lmetrics,
- [{description, "An OTP application"},
-  {vsn, "0.1.0"},
+ [{description, "An OTP application for metrics"},
+  {vsn, "0.0.1"},
   {registered, []},
   {mod, { lmetrics_app, []}},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    crypto,
+    jsx,
+    lager
    ]},
   {env,[]},
   {modules, []},
 
-  {maintainers, []},
-  {licenses, []},
-  {links, []}
+  {maintainers,["Georges Younes","Vitor Enes Duarte"]},
+  {licenses,["Apache 2.0"]},
+  {links,[{"Github","https://github.com/gyounes/lmetrics"}]}
  ]}.
