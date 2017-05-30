@@ -31,8 +31,6 @@
                 time_series :: time_series(),
                 latency_type_to_latency :: orddict:orddict()}).
 
--define(TIME_SERIES_INTERVAL, 1000). %% 1 second.
-
 -spec start_link() -> {ok, pid()} | ignore | {error, term()}.
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -134,5 +132,6 @@ code_change(_OldVsn, State, _Extra) ->
 %% @private
 schedule_time_series() ->
     %% @todo
-    %%Interval = lmetrics_config:get(time_series_interval),
-    timer:send_after(2000, time_series).
+    %% Interval = lmetrics_config:get(time_series_interval),
+    Interval = 2000,
+    timer:send_after(Interval, time_series).
