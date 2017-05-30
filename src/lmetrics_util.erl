@@ -5,8 +5,7 @@
 %% ldb_util callbacks
 -export([atom_to_binary/1,
          binary_to_atom/1,
-         unix_timestamp/0,
-         size/2]).
+         unix_timestamp/0]).
 
 %% @doc
 -spec atom_to_binary(atom()) -> binary().
