@@ -23,20 +23,3 @@ binary_to_atom(Binary) ->
 unix_timestamp() ->
     {Mega, Sec, _Micro} = erlang:timestamp(),
     Mega * 1000000 + Sec.
-
-%% @doc
--spec size(term | crdt | delta_buffer | pure_crdt, term()) -> non_neg_integer().
-size(term, T) ->
-    erts_debug:flat_size(T);
-size(crdt, CRDT) ->
-    state_type:crdt_size(CRDT);
-size(delta_buffer, DeltaBuffer) ->
-    lists:foldl(
-        fun({Sequence, {From, CRDT}}, Acc) ->
-            Acc + size(crdt, CRDT) + size(term, {Sequence, From})
-        end,
-        0,
-        DeltaBuffer
-    );
-size(pure_crdt, CRDT) ->
-    pure_type:crdt_size(CRDT).
