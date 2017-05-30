@@ -6,6 +6,7 @@
 
 %% lmetrics callbacks
 -export([start_link/0,
+         set_time_series_callback/1,
          get_time_series/0,
          get_latency/0,
          record_message/2,
@@ -26,7 +27,8 @@
 -type latency_type() :: local | remote.
 -type latency() :: list({latency_type(), list(integer())}).
 
--record(state, {time_series :: time_series(),
+-record(state, {time_series_callback :: function(),
+                time_series :: time_series(),
                 latency_type_to_latency :: orddict:orddict()}).
 
 -define(TIME_SERIES_INTERVAL, 1000). %% 1 second.
@@ -34,6 +36,10 @@
 -spec start_link() -> {ok, pid()} | ignore | {error, term()}.
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
+-spec set_time_series_callback(function()) -> ok.
+set_time_series_callback(Fun) ->
+    gen_server:call(?MODULE, {set_time_series_callback, Fun}, infinity).
 
 -spec get_time_series() -> time_series().
 get_time_series() ->
@@ -45,8 +51,8 @@ get_latency() ->
 
 -spec record_message(term(), non_neg_integer()) -> ok.
 record_message(MessageType, Size) ->
-    Metrics = [{size, Size}],
-    gen_server:cast(?MODULE, {message, MessageType, Metrics}).
+    Timestamp = lmetrics_util:unix_timestamp(),
+    gen_server:cast(?MODULE, {message, Timestamp, MessageType, Size}).
 
 %% @doc Record latency of:
 %%          - `local': creating a message locally
@@ -59,8 +65,12 @@ record_latency(Type, MicroSeconds) ->
 init([]) ->
     schedule_time_series(),
     ?LOG("lmetrics initialized!"),
-    {ok, #state{latency_type_to_latency=orddict:new(),
-                time_series=[]}}.
+    {ok, #state{time_series_callback=fun() -> undefined end,
+                time_series=[],
+                latency_type_to_latency=orddict:new()}}.
+
+handle_call({set_time_series_callback, Fun}, _From, State) ->
+    {reply, ok, State#state{time_series_callback=Fun}};
 
 handle_call(get_time_series, _From,
             #state{time_series=TimeSeries}=State) ->
@@ -74,22 +84,11 @@ handle_call(Msg, _From, State) ->
     lager:warning("Unhandled call message: ~p", [Msg]),
     {noreply, State}.
 
-handle_cast({message, MessageType, Metrics},
+handle_cast({message, Timestamp, MessageType, Size},
             #state{time_series=TimeSeries0}=State) ->
-    Size = orddict:fetch(size, Metrics),
 
     Timestamp = lmetrics_util:unix_timestamp(),
     TMetric = {Timestamp, transmission, {MessageType, Size}},
-    TimeSeries1 = lists:append(TimeSeries0, [TMetric]),
-
-    {noreply, State#state{time_series=TimeSeries1}};
-
-handle_cast({memory, MemoryType, Metrics},
-            #state{time_series=TimeSeries0}=State) ->
-    Size = orddict:fetch(size, Metrics),
-
-    Timestamp = lmetrics_util:unix_timestamp(),
-    TMetric = {Timestamp, memory, {MemoryType, Size}},
     TimeSeries1 = lists:append(TimeSeries0, [TMetric]),
 
     {noreply, State#state{time_series=TimeSeries1}};
@@ -103,9 +102,24 @@ handle_cast(Msg, State) ->
     lager:warning("Unhandled cast message: ~p", [Msg]),
     {noreply, State}.
 
-handle_info(time_series, State) ->
+handle_info(time_series, #state{time_series_callback=Fun,
+                                time_series=TimeSeries0}=State) ->
+    TimeSeries1 = case Fun() of
+        undefined ->
+            TimeSeries0;
+        {ok, ToBeAdded} ->
+            Timestamp = lmetrics_util:unix_timestamp(),
+            lists:foldl(
+                fun({MetricType, Metric}, Acc) ->
+                    TMetric = {Timestamp, MetricType, Metric},
+                    lists:append(Acc, [TMetric])
+                end,
+                TimeSeries0,
+                ToBeAdded
+            )
+    end,
     schedule_time_series(),
-    {noreply, State};
+    {noreply, State#state{time_series=TimeSeries1}};
 
 handle_info(Msg, State) ->
     lager:warning("Unhandled info message: ~p", [Msg]),
@@ -119,4 +133,6 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% @private
 schedule_time_series() ->
-    timer:send_after(?TIME_SERIES_INTERVAL, time_series).
+    %% @todo
+    %%Interval = lmetrics_config:get(time_series_interval),
+    timer:send_after(2000, time_series).

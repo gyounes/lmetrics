@@ -7,7 +7,6 @@
    [kernel,
     stdlib,
     crypto,
-    jsx,
     lager
    ]},
   {env,[]},

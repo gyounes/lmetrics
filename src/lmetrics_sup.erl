@@ -26,7 +26,13 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_all, 0, 1}, []} }.
+
+	Backend = [{lmetrics,
+               {lmetrics, start_link, []},
+               permanent, 5000, worker, [lmetrics]}],
+
+    RestartStrategy = {one_for_one, 5, 10},
+    {ok, {RestartStrategy, Backend}}.
 
 %%====================================================================
 %% Internal functions
