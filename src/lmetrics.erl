@@ -107,14 +107,8 @@ handle_info(time_series, #state{time_series_callback=Fun,
             TimeSeries0;
         {ok, ToBeAdded} ->
             Timestamp = lmetrics_util:unix_timestamp(),
-            lists:foldl(
-                fun(Metric, Acc) ->
-                    TMetric = {Timestamp, memory, Metric},
-                    lists:append(Acc, [TMetric])
-                end,
-                TimeSeries0,
-                ToBeAdded
-            )
+            TMetric = {Timestamp, memory, ToBeAdded},
+            lists:append(Acc, [TMetric])
     end,
     schedule_time_series(),
     {noreply, State#state{time_series=TimeSeries1}};
