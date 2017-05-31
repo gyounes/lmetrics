@@ -127,5 +127,6 @@ code_change(_OldVsn, State, _Extra) ->
 schedule_time_series() ->
     %% @todo
     %% Interval = lmetrics_config:get(time_series_interval),
+    lager:info("SCHEDULING"),
     Interval = 2000,
     timer:send_after(Interval, time_series).
