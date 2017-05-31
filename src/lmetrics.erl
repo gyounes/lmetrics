@@ -86,7 +86,7 @@ handle_cast({message, Timestamp, MessageType, Size},
             #state{time_series=TimeSeries0}=State) ->
 
     Timestamp = lmetrics_util:unix_timestamp(),
-    TMetric = {Timestamp, memory, {MessageType, Size}},
+    TMetric = {Timestamp, transmission, {MessageType, Size}},
     TimeSeries1 = lists:append(TimeSeries0, [TMetric]),
 
     {noreply, State#state{time_series=TimeSeries1}};
@@ -108,8 +108,8 @@ handle_info(time_series, #state{time_series_callback=Fun,
         {ok, ToBeAdded} ->
             Timestamp = lmetrics_util:unix_timestamp(),
             lists:foldl(
-                fun({MetricType, Metric}, Acc) ->
-                    TMetric = {Timestamp, MetricType, Metric},
+                fun(Metric, Acc) ->
+                    TMetric = {Timestamp, memory, Metric},
                     lists:append(Acc, [TMetric])
                 end,
                 TimeSeries0,
