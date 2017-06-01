@@ -83,7 +83,7 @@ handle_call(Msg, _From, State) ->
     {noreply, State}.
 
 handle_cast({message, Timestamp, MessageType, Size},
-            #state{time_series=TimeSeries0}=State) ->
+            #state{=TimeSeries0}=State) ->
 
     Timestamp = lmetrics_util:unix_timestamp(),
     TMetric = {Timestamp, transmission, {MessageType, Size}},
@@ -127,6 +127,6 @@ code_change(_OldVsn, State, _Extra) ->
 schedule_time_series() ->
     %% @todo
     %% Interval = lmetrics_config:get(time_series_interval),
-    lager:info("SCHEDULING"),
+    % lager:info("SCHEDULING"),
     Interval = 2000,
     timer:send_after(Interval, time_series).
