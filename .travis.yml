@@ -1,0 +1,17 @@
+language: erlang
+otp_release:
+  - 19.2
+install:
+  - ./rebar3 update
+  - make
+before_script:
+  - epmd -daemon
+script:
+  - make test
+  - make xref
+  - make dialyzer
+  - make lint
+notifications:
+  email: georges.r.younes@gmail.com
+  slack: haslab:jhAnACJzswFtYwKXpbZzjbFq
+sudo: false
