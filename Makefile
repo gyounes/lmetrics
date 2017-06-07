@@ -29,7 +29,7 @@ packageclean:
 
 check: test xref dialyzer lint
 
-test: eunit ct proper
+test: eunit proper
 
 eunit:
 	${REBAR} as test eunit
