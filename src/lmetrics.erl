@@ -85,7 +85,7 @@ handle_call(Msg, _From, State) ->
 handle_cast({message, Timestamp, MessageType, Size},
             #state{time_series=TimeSeries0}=State) ->
 
-    Timestamp = lmetrics_util:unix_timestamp(),
+    % Timestamp = lmetrics_util:unix_timestamp(),
     TMetric = {Timestamp, transmission, {MessageType, Size}},
     TimeSeries1 = lists:append(TimeSeries0, [TMetric]),
 
