@@ -20,5 +20,5 @@ binary_to_atom(Binary) ->
 %% @doc
 -spec unix_timestamp() -> timestamp().
 unix_timestamp() ->
-    {Mega, Sec, _Micro} = erlang:timestamp(),
-    Mega * 1000000 + Sec.
+    {Mega, Sec, Micro} = erlang:timestamp(),
+    (Mega * 1000000 + Sec) * 1000000 + Micro.
