@@ -49,7 +49,7 @@ get_latency() ->
 
 -spec record_message(term(), non_neg_integer()) -> ok.
 record_message(MessageType, Size) ->
-    Timestamp = lmetrics_util:unix_timestamp(),
+    Timestamp = lmetrics_util:get_timestamp(?UNIT),
     gen_server:cast(?MODULE, {message, Timestamp, MessageType, Size}).
 
 %% @doc Record latency of:
@@ -85,7 +85,7 @@ handle_call(Msg, _From, State) ->
 handle_cast({message, Timestamp, MessageType, Size},
             #state{time_series=TimeSeries0}=State) ->
 
-    % Timestamp = lmetrics_util:unix_timestamp(),
+    % Timestamp = lmetrics_util:get_timestamp(?UNIT),
     TMetric = {Timestamp, transmission, {MessageType, Size}},
     TimeSeries1 = lists:append(TimeSeries0, [TMetric]),
 
@@ -106,7 +106,7 @@ handle_info(time_series, #state{time_series_callback=Fun,
         undefined ->
             TimeSeries0;
         {ok, ToBeAdded} ->
-            Timestamp = lmetrics_util:unix_timestamp(),
+            Timestamp = lmetrics_util:get_timestamp(?UNIT),
             TMetric = {Timestamp, memory, ToBeAdded},
             lists:append(TimeSeries0, [TMetric])
     end,

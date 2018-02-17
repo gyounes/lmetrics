@@ -5,7 +5,7 @@
 %% ldb_util callbacks
 -export([atom_to_binary/1,
          binary_to_atom/1,
-         unix_timestamp/0]).
+         get_timestamp/1]).
 
 %% @doc
 -spec atom_to_binary(atom()) -> binary().
@@ -17,8 +17,7 @@ atom_to_binary(Atom) ->
 binary_to_atom(Binary) ->
     erlang:binary_to_atom(Binary, utf8).
 
-%% @doc
--spec unix_timestamp() -> timestamp().
-unix_timestamp() ->
-    {Mega, Sec, Micro} = erlang:timestamp(),
-    (Mega * 1000000 + Sec) * 1000000 + Micro.
+%% @private get current time
+-spec get_timestamp(term()) -> term().
+get_timestamp(Unit) ->
+    erlang:system_time(Unit).

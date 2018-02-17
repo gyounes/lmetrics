@@ -9,6 +9,8 @@
 -type message() :: term().
 -type timestamp() :: non_neg_integer().
 
+-define(UNIT, millisecond).
+
 %% logging
 -define(LOGGING, list_to_atom("true")). %% dialyzer
 -define(LOG(S),
