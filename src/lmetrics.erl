@@ -29,7 +29,7 @@
 
 -record(state, {time_series_callback :: function(),
                 time_series :: time_series(),
-                latency_type_to_latency :: dict:dict()}).
+                latency_type_to_latency :: orddict:orddict()}).
 
 -spec start_link() -> {ok, pid()} | ignore | {error, term()}.
 start_link() ->
@@ -65,7 +65,7 @@ init([]) ->
     ?LOG("lmetrics initialized!"),
     {ok, #state{time_series_callback=fun() -> undefined end,
                 time_series=[],
-                latency_type_to_latency=dict:new()}}.
+                latency_type_to_latency=orddict:new()}}.
 
 handle_call({set_time_series_callback, Fun}, _From, State) ->
     {reply, ok, State#state{time_series_callback=Fun}};
@@ -93,7 +93,7 @@ handle_cast({message, Timestamp, MessageType, Size},
 
 handle_cast({latency, Type, MilliSeconds},
             #state{latency_type_to_latency=Map0}=State) ->
-    Map1 = dict:append(Type, MilliSeconds, Map0),
+    Map1 = orddict:append(Type, MilliSeconds, Map0),
     {noreply, State#state{latency_type_to_latency=Map1}};
 
 handle_cast(Msg, State) ->
