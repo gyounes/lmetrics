@@ -20,4 +20,4 @@ binary_to_atom(Binary) ->
 %% @private get current time
 -spec get_timestamp(term()) -> term().
 get_timestamp(Unit) ->
-    erlang:system_time(Unit).
+    erlang:monotonic_time(Unit).
