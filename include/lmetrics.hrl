@@ -10,6 +10,7 @@
 -type timestamp() :: non_neg_integer().
 
 -define(UNIT, millisecond).
+-define(DEFAULT_LMETRICS_TS_INTERVAL, 1000).
 
 %% logging
 -define(LOGGING, list_to_atom("true")). %% dialyzer
