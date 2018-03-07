@@ -29,7 +29,7 @@
 
 -record(state, {time_series_callback :: function(),
                 time_series :: time_series(),
-                latency_type_to_latency :: orddict:orddict()}).
+                latency_type_to_latency :: dict:dict()}).
 
 -spec start_link() -> {ok, pid()} | ignore | {error, term()}.
 start_link() ->
@@ -56,8 +56,8 @@ record_message(MessageType, Size) ->
 %%          - `local': creating a message locally
 %%          - `remote': applying a message remotely
 -spec record_latency(latency_type(), integer()) -> ok.
-record_latency(Type, MicroSeconds) ->
-    gen_server:cast(?MODULE, {latency, Type, MicroSeconds}).
+record_latency(Type, MilliSeconds) ->
+    gen_server:cast(?MODULE, {latency, Type, MilliSeconds}).
 
 %% gen_server callbacks
 init([]) ->
@@ -65,7 +65,7 @@ init([]) ->
     ?LOG("lmetrics initialized!"),
     {ok, #state{time_series_callback=fun() -> undefined end,
                 time_series=[],
-                latency_type_to_latency=orddict:new()}}.
+                latency_type_to_latency=dict:new()}}.
 
 handle_call({set_time_series_callback, Fun}, _From, State) ->
     {reply, ok, State#state{time_series_callback=Fun}};
@@ -91,9 +91,9 @@ handle_cast({message, Timestamp, MessageType, Size},
 
     {noreply, State#state{time_series=TimeSeries1}};
 
-handle_cast({latency, Type, MicroSeconds},
+handle_cast({latency, Type, MilliSeconds},
             #state{latency_type_to_latency=Map0}=State) ->
-    Map1 = orddict:append(Type, MicroSeconds, Map0),
+    Map1 = dict:append(Type, MilliSeconds, Map0),
     {noreply, State#state{latency_type_to_latency=Map1}};
 
 handle_cast(Msg, State) ->
@@ -125,7 +125,5 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% @private
 schedule_time_series() ->
-    %% @todo
-    %% Interval = lmetrics_config:get(time_series_interval),
-    Interval = 2000,
+    Interval = lmetrics_config:get(time_series_interval),
     timer:send_after(Interval, time_series).
