@@ -9,6 +9,7 @@
          set_time_series_callback/1,
          get_time_series/0,
          get_latency/0,
+         stop_scheduling/0,
          record_message/2,
          record_latency/2]).
 
@@ -29,6 +30,7 @@
 
 -record(state, {time_series_callback :: function(),
                 time_series :: time_series(),
+                keep_scheduling :: atom(),
                 latency_type_to_latency :: orddict:orddict()}).
 
 -spec start_link() -> {ok, pid()} | ignore | {error, term()}.
@@ -46,6 +48,10 @@ get_time_series() ->
 -spec get_latency() -> latency().
 get_latency() ->
     gen_server:call(?MODULE, get_latency, infinity).
+
+-spec stop_scheduling() -> ok.
+stop_scheduling() ->
+    gen_server:cast(?MODULE, stop_scheduling).
 
 -spec record_message(term(), non_neg_integer()) -> ok.
 record_message(MessageType, Size) ->
@@ -65,6 +71,7 @@ init([]) ->
     ?LOG("lmetrics initialized!"),
     {ok, #state{time_series_callback=fun() -> undefined end,
                 time_series=[],
+                keep_scheduling=true,
                 latency_type_to_latency=orddict:new()}}.
 
 handle_call({set_time_series_callback, Fun}, _From, State) ->
@@ -72,10 +79,12 @@ handle_call({set_time_series_callback, Fun}, _From, State) ->
 
 handle_call(get_time_series, _From,
             #state{time_series=TimeSeries}=State) ->
+    ?LOG("lmetrics get_time_series!"),
     {reply, TimeSeries, State};
 
 handle_call(get_latency, _From,
             #state{latency_type_to_latency=Map}=State) ->
+    ?LOG("lmetrics get_latency!"),
     {reply, Map, State};
 
 handle_call(Msg, _From, State) ->
@@ -96,12 +105,15 @@ handle_cast({latency, Type, MilliSeconds},
     Map1 = orddict:append(Type, MilliSeconds, Map0),
     {noreply, State#state{latency_type_to_latency=Map1}};
 
+handle_cast(stop_scheduling, State) ->
+    {noreply, State#state{keep_scheduling=false}};
+
 handle_cast(Msg, State) ->
     lager:warning("Unhandled cast message: ~p", [Msg]),
     {noreply, State}.
 
 handle_info(time_series, #state{time_series_callback=Fun,
-                                time_series=TimeSeries0}=State) ->
+                                time_series=TimeSeries0, keep_scheduling=KeepScheduling}=State) ->
     TimeSeries1 = case Fun() of
         undefined ->
             TimeSeries0;
@@ -110,7 +122,12 @@ handle_info(time_series, #state{time_series_callback=Fun,
             TMetric = {Timestamp, memory, ToBeAdded},
             lists:append(TimeSeries0, [TMetric])
     end,
-    schedule_time_series(),
+    case KeepScheduling of
+        true ->
+            schedule_time_series();
+        false ->
+            ok
+    end,
     {noreply, State#state{time_series=TimeSeries1}};
 
 handle_info(Msg, State) ->
