@@ -21,9 +21,8 @@
          terminate/2,
          code_change/3]).
 
--type metric_type() :: transmission | memory.
--type metric() :: term().
--type time_series() :: list({timestamp(), metric_type(), metric()}).
+% -type metric_type() :: transmission | memory.
+-type time_series() :: dict:dict().
 
 -type latency_type() :: local | remote.
 -type latency() :: list({latency_type(), list(integer())}).
@@ -70,7 +69,7 @@ record_latency(Type, MilliSeconds) ->
 init([]) ->
     ?LOG("lmetrics initialized!"),
     {ok, #state{time_series_callback=fun() -> undefined end,
-                time_series=[],
+                time_series=dict:new(),
                 keep_scheduling=true,
                 latency_type_to_latency=orddict:new()}}.
 
@@ -94,9 +93,8 @@ handle_call(Msg, _From, State) ->
 handle_cast({message, Timestamp, MessageType, Size},
             #state{time_series=TimeSeries0}=State) ->
 
-    % Timestamp = lmetrics_util:get_timestamp(?UNIT),
-    TMetric = {Timestamp, transmission, {MessageType, Size}},
-    TimeSeries1 = lists:append(TimeSeries0, [TMetric]),
+    TimeSeries1 = dict:store({Timestamp, transmission},
+        {MessageType, Size}, TimeSeries0),
 
     {noreply, State#state{time_series=TimeSeries1}};
 
@@ -119,8 +117,7 @@ handle_info(time_series, #state{time_series_callback=Fun,
             TimeSeries0;
         {ok, ToBeAdded} ->
             Timestamp = lmetrics_util:get_timestamp(?UNIT),
-            TMetric = {Timestamp, memory, ToBeAdded},
-            lists:append(TimeSeries0, [TMetric])
+            dict:store({Timestamp, memory}, ToBeAdded, TimeSeries0)
     end,
     case KeepScheduling of
         true ->
