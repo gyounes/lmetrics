@@ -113,7 +113,7 @@ handle_cast(Msg, State) ->
     {noreply, State}.
 
 handle_info(time_series, #state{time_series_callback=Fun,
-                                time_series=TimeSeries0, keep_scheduling=KeepScheduling}=State) ->
+    time_series=TimeSeries0, keep_scheduling=KeepScheduling}=State) ->
     TimeSeries1 = case Fun() of
         undefined ->
             TimeSeries0;
