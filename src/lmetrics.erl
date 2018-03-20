@@ -38,7 +38,6 @@ start_link() ->
 
 -spec set_time_series_callback(function()) -> ok.
 set_time_series_callback(Fun) ->
-    schedule_time_series(),
     gen_server:call(?MODULE, {set_time_series_callback, Fun}, infinity).
 
 -spec get_time_series() -> time_series().
@@ -68,6 +67,7 @@ record_latency(Type, MilliSeconds) ->
 %% gen_server callbacks
 init([]) ->
     ?LOG("lmetrics initialized!"),
+    schedule_time_series(),
     {ok, #state{time_series_callback=fun() -> undefined end,
                 time_series=dict:new(),
                 keep_scheduling=true,
