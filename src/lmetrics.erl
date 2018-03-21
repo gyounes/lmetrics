@@ -80,7 +80,7 @@ handle_call({set_time_series_callback, Fun}, _From, State) ->
 handle_call(get_time_series, _From,
             #state{time_series=TimeSeries}=State) ->
     ?LOG("lmetrics get_time_series!"),
-    {reply, TimeSeries, State};
+    {reply, lists:sort(TimeSeries), State};
 
 handle_call(get_latency, _From,
             #state{latency_type_to_latency=Map}=State) ->
