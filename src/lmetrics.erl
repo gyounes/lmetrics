@@ -29,7 +29,8 @@
 -type latency() :: dict:dict(latency_type(), list(metric())).
 
 -type transmission_type() :: term().
--type transmission() :: dict:dict(transmission_type(), list({timestamp(), metric()})).
+-type transmission() :: dict:dict(transmission_type(),
+    list({timestamp(), metric()})).
 
 -record(state, {memory_callback :: function(),
                 memory :: memory(),
@@ -107,7 +108,8 @@ handle_call(Msg, _From, State) ->
 handle_cast({transmission, Timestamp, TransmissionType, Size},
             #state{transmission=Transmission0}=State) ->
     V = dict:fetch(TransmissionType, Transmission0),
-    Transmission1 = dict:store(TransmissionType, [{Timestamp, Size} | V], Transmission0),
+    Transmission1 = dict:store(TransmissionType,
+        [{Timestamp, Size} | V], Transmission0),
 
     {noreply, State#state{transmission=Transmission1}};
 
