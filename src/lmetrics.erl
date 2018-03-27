@@ -120,14 +120,14 @@ handle_call(Msg, _From, State) ->
 
 handle_cast({transmission, Timestamp, TransmissionType, Size},
             #state{transmission=Transmission0}=State) ->
-    V = dict:get(TransmissionType, Transmission0),
+    V = dict:fetch(TransmissionType, Transmission0),
     Transmission1 = dict:store(TransmissionType, [{Timestamp, Size} | V], Transmission0),
 
     {noreply, State#state{transmission=Transmission1}};
 
 handle_cast({latency, Type, MilliSeconds},
             #state{latency=Latency0}=State) ->
-    V = dict:get(Type, Latency0),
+    V = dict:fetch(Type, Latency0),
     Latency1 = dict:store(Type, [MilliSeconds | V], Latency0),
     {noreply, State#state{latency=Latency1}};
 
