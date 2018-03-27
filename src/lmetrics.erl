@@ -93,26 +93,12 @@ handle_call(get_memory, _From,
 handle_call(get_latency, _From,
             #state{latency=Latency}=State) ->
     ?LOG("lmetrics get_latency!"),
-    Result = dict:fold(
-        fun
-            (K, V, Acc) ->
-                dict:store(K, lists:sort(V), Acc)
-        end,
-        dict:new(),
-        Latency),
-    {reply, Result, State};
+    {reply, update_dict(Latency), State};
 
 handle_call(get_transmission, _From,
             #state{transmission=Transmission}=State) ->
     ?LOG("lmetrics get_transmission!"),
-    Result = dict:fold(
-        fun
-            (K, V, Acc) ->
-                dict:store(K, lists:sort(V), Acc)
-        end,
-        dict:new(),
-        Transmission),
-    {reply, Result, State};
+    {reply, update_dict(Transmission), State};
 
 handle_call(Msg, _From, State) ->
     lager:warning("Unhandled call message: ~p", [Msg]),
@@ -169,3 +155,13 @@ code_change(_OldVsn, State, _Extra) ->
 schedule_memory() ->
     Interval = lmetrics_config:get(memory_interval),
     timer:send_after(Interval, memory).
+
+%% @private
+update_dict(Dict) ->
+    dict:fold(
+        fun
+            (K, V, Acc) ->
+                dict:store(K, lists:sort(V), Acc)
+        end,
+        dict:new(),
+        Dict).
