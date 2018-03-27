@@ -107,16 +107,26 @@ handle_call(Msg, _From, State) ->
 
 handle_cast({transmission, Timestamp, TransmissionType, Size},
             #state{transmission=Transmission0}=State) ->
-    V = dict:fetch(TransmissionType, Transmission0),
-    Transmission1 = dict:store(TransmissionType,
-        [{Timestamp, Size} | V], Transmission0),
-
+    Transmission1 = case dict:find(TransmissionType, Transmission0) of
+        {ok, V} ->
+            dict:store(TransmissionType,
+                [{Timestamp, Size} | V], Transmission0);
+        error ->
+            dict:store(TransmissionType,
+                [{Timestamp, Size}], Transmission0)
+    end,
     {noreply, State#state{transmission=Transmission1}};
 
 handle_cast({latency, Type, MilliSeconds},
             #state{latency=Latency0}=State) ->
-    V = dict:fetch(Type, Latency0),
-    Latency1 = dict:store(Type, [MilliSeconds | V], Latency0),
+    Latency1 = case dict:find(Type, Latency0) of
+        {ok, V} ->
+            dict:store(Type,
+                [MilliSeconds | V], Latency0);
+        error ->
+            dict:store(Type,
+                [MilliSeconds], Latency0)
+    end,
     {noreply, State#state{latency=Latency1}};
 
 handle_cast(stop_scheduling, State) ->
