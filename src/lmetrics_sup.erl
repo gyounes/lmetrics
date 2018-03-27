@@ -44,7 +44,7 @@ init([]) ->
 configure() ->
     %% configure Interval
     configure_int("LMETRICS_TS_INTERVAL",
-                  time_series_interval,
+                  memory_interval,
                   ?DEFAULT_LMETRICS_TS_INTERVAL).
 
 %% @private
