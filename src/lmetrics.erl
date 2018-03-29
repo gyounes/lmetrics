@@ -9,7 +9,7 @@
          set_memory_callback/1,
          get_memory/0,
          stop_scheduling/0,
-         record_transmission/3,
+         record_transmission/2,
          get_transmission/0,
          record_latency/2,
          get_latency/0]).
@@ -62,14 +62,15 @@ get_transmission() ->
 stop_scheduling() ->
     gen_server:cast(?MODULE, stop_scheduling).
 
--spec record_transmission(timestamp(), term(), non_neg_integer()) -> ok.
-record_transmission(Timestamp, TransmissionType, Size) ->
-    gen_server:cast(?MODULE, {transmission, Timestamp, TransmissionType, Size}).
+-spec record_transmission(transmission_type(), {timestamp(), metric()}) -> ok.
+record_transmission(TransmissionType, {Timestamp, Size}) ->
+    gen_server:cast(?MODULE, {transmission, TransmissionType,
+        {Timestamp, Size}}).
 
 %% @doc Record latency of:
 %%          - `local': creating a message locally
 %%          - `remote': delivering a message remotely
--spec record_latency(latency_type(), {timestamp(), integer()}) -> ok.
+-spec record_latency(latency_type(), {timestamp(), metric()}) -> ok.
 record_latency(Type, {Timestamp, MilliSeconds}) ->
     gen_server:cast(?MODULE, {latency, Type, {Timestamp, MilliSeconds}}).
 
@@ -105,7 +106,7 @@ handle_call(Msg, _From, State) ->
     lager:warning("Unhandled call message: ~p", [Msg]),
     {noreply, State}.
 
-handle_cast({transmission, Timestamp, TransmissionType, Size},
+handle_cast({transmission, TransmissionType, {Timestamp, Size}},
             #state{transmission=Transmission0}=State) ->
     Transmission1 = case dict:find(TransmissionType, Transmission0) of
         {ok, V} ->
