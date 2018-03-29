@@ -26,7 +26,7 @@
 -type memory() :: list({timestamp(), metric()}).
 
 -type latency_type() :: local | remote.
--type latency() :: dict:dict(latency_type(), list(metric())).
+-type latency() :: dict:dict(latency_type(), list({timestamp(), metric()})).
 
 -type transmission_type() :: term().
 -type transmission() :: dict:dict(transmission_type(),
