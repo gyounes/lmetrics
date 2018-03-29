@@ -69,9 +69,9 @@ record_transmission(Timestamp, TransmissionType, Size) ->
 %% @doc Record latency of:
 %%          - `local': creating a message locally
 %%          - `remote': delivering a message remotely
--spec record_latency(latency_type(), integer()) -> ok.
-record_latency(Type, MilliSeconds) ->
-    gen_server:cast(?MODULE, {latency, Type, MilliSeconds}).
+-spec record_latency(latency_type(), {timestamp(), integer()}) -> ok.
+record_latency(Type, {Timestamp, MilliSeconds}) ->
+    gen_server:cast(?MODULE, {latency, Type, {Timestamp, MilliSeconds}}).
 
 %% gen_server callbacks
 init([]) ->
@@ -117,15 +117,15 @@ handle_cast({transmission, Timestamp, TransmissionType, Size},
     end,
     {noreply, State#state{transmission=Transmission1}};
 
-handle_cast({latency, Type, MilliSeconds},
+handle_cast({latency, Type, {Timestamp, MilliSeconds}},
             #state{latency=Latency0}=State) ->
     Latency1 = case dict:find(Type, Latency0) of
         {ok, V} ->
             dict:store(Type,
-                [MilliSeconds | V], Latency0);
+                [{Timestamp, MilliSeconds} | V], Latency0);
         error ->
             dict:store(Type,
-                [MilliSeconds], Latency0)
+                [{Timestamp, MilliSeconds}], Latency0)
     end,
     {noreply, State#state{latency=Latency1}};
 
