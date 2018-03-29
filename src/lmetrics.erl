@@ -23,7 +23,7 @@
          code_change/3]).
 
 -type metric() :: non_neg_integer().
--type memory() :: list({timestamp(), metric()}).
+-type memory() :: list({timestamp(), {metric(), metric()}}).
 
 -type latency_type() :: local | remote.
 -type latency() :: dict:dict(latency_type(), list({timestamp(), metric()})).
