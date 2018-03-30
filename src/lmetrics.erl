@@ -11,8 +11,8 @@
          stop_scheduling/0,
          record_transmission/2,
          get_transmission/0,
-         record_latency/2,
-         get_latency/0]).
+         record_processing/2,
+         get_processing/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -27,8 +27,8 @@
 -type memory_type() :: term().
 -type memory() :: dict:dict(memory_type(), list({timestamp(), metric()})).
 
--type latency_type() :: term().
--type latency() :: dict:dict(latency_type(), list({timestamp(), metric()})).
+-type processing_type() :: term().
+-type processing() :: dict:dict(processing_type(), list({timestamp(), metric()})).
 
 -type transmission_type() :: term().
 -type transmission() :: dict:dict(transmission_type(),
@@ -37,7 +37,7 @@
 -record(state, {memory_callback :: function(),
                 memory :: memory(),
                 transmission :: transmission(),
-                latency :: latency(),
+                processing :: processing(),
                 keep_scheduling :: atom()}).
 
 -spec start_link() -> {ok, pid()} | ignore | {error, term()}.
@@ -52,9 +52,9 @@ set_memory_callback(Fun) ->
 get_memory() ->
     gen_server:call(?MODULE, get_memory, infinity).
 
--spec get_latency() -> latency().
-get_latency() ->
-    gen_server:call(?MODULE, get_latency, infinity).
+-spec get_processing() -> processing().
+get_processing() ->
+    gen_server:call(?MODULE, get_processing, infinity).
 
 -spec get_transmission() -> transmission().
 get_transmission() ->
@@ -69,9 +69,9 @@ record_transmission(TransmissionType, {Timestamp, Size}) ->
     gen_server:cast(?MODULE, {transmission, TransmissionType,
         {Timestamp, Size}}).
 
--spec record_latency(latency_type(), {timestamp(), metric()}) -> ok.
-record_latency(Type, {Timestamp, Time}) ->
-    gen_server:cast(?MODULE, {latency, Type, {Timestamp, Time}}).
+-spec record_processing(processing_type(), {timestamp(), metric()}) -> ok.
+record_processing(Type, {Timestamp, Time}) ->
+    gen_server:cast(?MODULE, {processing, Type, {Timestamp, Time}}).
 
 %% gen_server callbacks
 init([]) ->
@@ -80,7 +80,7 @@ init([]) ->
     {ok, #state{memory_callback=fun() -> undefined end,
                 memory=dict:new(),
                 keep_scheduling=true,
-                latency=dict:new(),
+                processing=dict:new(),
                 transmission=dict:new()}}.
 
 handle_call({set_memory_callback, Fun}, _From, State) ->
@@ -91,10 +91,10 @@ handle_call(get_memory, _From,
     ?LOG("lmetrics get_memory!"),
     {reply, update_dict(Memory), State};
 
-handle_call(get_latency, _From,
-            #state{latency=Latency}=State) ->
-    ?LOG("lmetrics get_latency!"),
-    {reply, update_dict(Latency), State};
+handle_call(get_processing, _From,
+            #state{processing=Processing}=State) ->
+    ?LOG("lmetrics get_processing!"),
+    {reply, update_dict(Processing), State};
 
 handle_call(get_transmission, _From,
             #state{transmission=Transmission}=State) ->
@@ -117,17 +117,17 @@ handle_cast({transmission, TransmissionType, {Timestamp, Size}},
     end,
     {noreply, State#state{transmission=Transmission1}};
 
-handle_cast({latency, Type, {Timestamp, Time}},
-            #state{latency=Latency0}=State) ->
-    Latency1 = case dict:find(Type, Latency0) of
+handle_cast({processing, Type, {Timestamp, Time}},
+            #state{processing=Processing0}=State) ->
+    Processing1 = case dict:find(Type, Processing0) of
         {ok, V} ->
             dict:store(Type,
-                [{Timestamp, Time} | V], Latency0);
+                [{Timestamp, Time} | V], Processing0);
         error ->
             dict:store(Type,
-                [{Timestamp, Time}], Latency0)
+                [{Timestamp, Time}], Processing0)
     end,
-    {noreply, State#state{latency=Latency1}};
+    {noreply, State#state{processing=Processing1}};
 
 handle_cast(stop_scheduling, State) ->
     {noreply, State#state{keep_scheduling=false}};
