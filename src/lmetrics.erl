@@ -25,10 +25,12 @@
 -type metric() :: non_neg_integer().
 
 -type memory_type() :: term().
--type memory() :: dict:dict(memory_type(), list({timestamp(), metric()})).
+-type memory() :: dict:dict(memory_type(),
+    list({timestamp(), metric()})).
 
 -type processing_type() :: term().
--type processing() :: dict:dict(processing_type(), list({timestamp(), metric()})).
+-type processing() :: dict:dict(processing_type(),
+    list({timestamp(), metric()})).
 
 -type transmission_type() :: term().
 -type transmission() :: dict:dict(transmission_type(),
