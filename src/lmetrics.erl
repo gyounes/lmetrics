@@ -23,9 +23,11 @@
          code_change/3]).
 
 -type metric() :: non_neg_integer().
--type memory() :: list({timestamp(), {metric(), metric()}}).
 
--type latency_type() :: local | remote.
+-type memory_type() :: term().
+-type memory() :: dict:dict(memory_type(), list({timestamp(), metric()})).
+
+-type latency_type() :: term().
 -type latency() :: dict:dict(latency_type(), list({timestamp(), metric()})).
 
 -type transmission_type() :: term().
@@ -67,19 +69,16 @@ record_transmission(TransmissionType, {Timestamp, Size}) ->
     gen_server:cast(?MODULE, {transmission, TransmissionType,
         {Timestamp, Size}}).
 
-%% @doc Record latency of:
-%%          - `local': creating a message locally
-%%          - `remote': delivering a message remotely
 -spec record_latency(latency_type(), {timestamp(), metric()}) -> ok.
-record_latency(Type, {Timestamp, MilliSeconds}) ->
-    gen_server:cast(?MODULE, {latency, Type, {Timestamp, MilliSeconds}}).
+record_latency(Type, {Timestamp, Time}) ->
+    gen_server:cast(?MODULE, {latency, Type, {Timestamp, Time}}).
 
 %% gen_server callbacks
 init([]) ->
     ?LOG("lmetrics initialized!"),
     schedule_memory(),
     {ok, #state{memory_callback=fun() -> undefined end,
-                memory=[],
+                memory=dict:new(),
                 keep_scheduling=true,
                 latency=dict:new(),
                 transmission=dict:new()}}.
@@ -90,7 +89,7 @@ handle_call({set_memory_callback, Fun}, _From, State) ->
 handle_call(get_memory, _From,
             #state{memory=Memory}=State) ->
     ?LOG("lmetrics get_memory!"),
-    {reply, lists:sort(Memory), State};
+    {reply, update_dict(Memory), State};
 
 handle_call(get_latency, _From,
             #state{latency=Latency}=State) ->
@@ -118,15 +117,15 @@ handle_cast({transmission, TransmissionType, {Timestamp, Size}},
     end,
     {noreply, State#state{transmission=Transmission1}};
 
-handle_cast({latency, Type, {Timestamp, MilliSeconds}},
+handle_cast({latency, Type, {Timestamp, Time}},
             #state{latency=Latency0}=State) ->
     Latency1 = case dict:find(Type, Latency0) of
         {ok, V} ->
             dict:store(Type,
-                [{Timestamp, MilliSeconds} | V], Latency0);
+                [{Timestamp, Time} | V], Latency0);
         error ->
             dict:store(Type,
-                [{Timestamp, MilliSeconds}], Latency0)
+                [{Timestamp, Time}], Latency0)
     end,
     {noreply, State#state{latency=Latency1}};
 
@@ -142,9 +141,15 @@ handle_info(memory, #state{memory_callback=Fun,
     Memory1 = case Fun() of
         undefined ->
             Memory0;
-        {ok, ToBeAdded} ->
-            Timestamp = lmetrics_util:get_timestamp(?UNIT),
-            [{Timestamp, ToBeAdded}|Memory0]
+        {ok, {Type, {Timestamp, Size}}} ->
+            case dict:find(Type, Memory0) of
+                {ok, V} ->
+                    dict:store(Type,
+                        [{Timestamp, Size} | V], Memory0);
+                error ->
+                    dict:store(Type,
+                        [{Timestamp, Size}], Memory0)
+            end
     end,
     case KeepScheduling of
         true ->
